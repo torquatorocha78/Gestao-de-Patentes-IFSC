@@ -380,6 +380,53 @@ elif pagina == "📤 Importar Excel":
                 st.success(f"🎉 {sucesso_count} patente(s) importada(s) com sucesso!")
                 st.balloons()
 elif pagina == "📁Relatórios":
-    st.title("📁 Exportar para excel")
-    st.set_page_config(page_title="Gestão de Patentes IFSC")
+    st.title("📁 Exportar para Excel")
+
+    if df.empty:
+        st.warning("Nenhum dado carregado.")
+    else:
+        st.subheader("Configurar relatório")
+
+        # Seleção de colunas
+        colunas_disponiveis = df.columns.tolist()
+        colunas_selecionadas = st.multiselect(
+            "Selecione as colunas para exportar",
+            colunas_disponiveis,
+            default=colunas_disponiveis
+        )
+
+        df_filtrado = df.copy()
+
+        # Filtros por coluna
+        with st.expander("Filtros"):
+            for col in colunas_selecionadas:
+                valores = df[col].dropna().unique().tolist()
+                if len(valores) > 1 and len(valores) <= 50:
+                    selecionados = st.multiselect(
+                        f"Filtrar {col}",
+                        valores,
+                        default=valores
+                    )
+                    df_filtrado = df_filtrado[df_filtrado[col].isin(selecionados)]
+
+        # Aplicar seleção final de colunas
+        df_final = df_filtrado[colunas_selecionadas]
+
+        st.subheader("Pré-visualização")
+        st.dataframe(df_final)
+
+        # Exportação Excel
+        buffer = BytesIO()
+        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+            df_final.to_excel(writer, index=False, sheet_name="Relatório")
+
+        buffer.seek(0)
+
+        st.download_button(
+            "📥 Baixar relatório em Excel",
+            buffer,
+            file_name="relatorio_patentes.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        )
+   
 
