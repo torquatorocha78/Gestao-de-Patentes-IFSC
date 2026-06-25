@@ -383,10 +383,3 @@ elif pagina == "📁Relatórios":
     st.title("📁 Exportar para excel")
     st.set_page_config(page_title="Gestão de Patentes IFSC")
 
-
-
-
-    pdf_path = Path("relatorio_patentes.pdf")
-    gerar_pdf(df, pdf_path)
-    with open(pdf_path, "rb") as f:
-        st.download_button("Baixar PDF", f, "relatorio_patentes.pdf", "application/pdf")
