@@ -3,7 +3,7 @@ import streamlit as st
 
 import database as db
 import utils
-
+from io import BytesIO
 
 st.set_page_config(
     page_title="Sistema de Gestao de Patentes",
