@@ -30,7 +30,7 @@ st.markdown(
 st.sidebar.title("⚙️ Navegacao")
 pagina = st.sidebar.radio(
     "Selecione uma página:",
-    ["📊 Dashboard", "➕ Adicionar Patente", "📁 Minhas Patentes", "📤 Importar Excel"],
+    ["📊 Dashboard", "➕ Adicionar Patente", "📁 Minhas Patentes", "📤 Importar Excel", "📁Relatórios"],
 )
 
 
