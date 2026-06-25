@@ -383,7 +383,7 @@ elif pagina == "📁Relatórios":
     st.title("📁 Exportar para excel")
     st.set_page_config(page_title="Gestão de Patentes IFSC")
 
-uploaded = st.download_button("Baixar CSV", csv, "relatorio_patentes.csv", "text/csv")
+
 
 
     pdf_path = Path("relatorio_patentes.pdf")
