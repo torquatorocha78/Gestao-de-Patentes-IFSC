@@ -379,7 +379,8 @@ elif pagina == "📤 Importar Excel":
             if sucesso_count > 0:
                 st.success(f"🎉 {sucesso_count} patente(s) importada(s) com sucesso!")
                 st.balloons()
-
+elif pagina == "📁Relatórios":
+    st.title("📤 Importar Patentes do Excel")
 
 
 
