@@ -244,7 +244,15 @@ elif pagina == "📁 Minhas Patentes":
             st.metric("✅ Concessao", concessao)
         with col4:
             st.metric("👤 Titular", patente_dados["titular"] if patente_dados["titular"] else "N/A")
-        
+        # >>> BLOCO A SER INSERIDO (logo após a métrica) <<<
+    if patente_dados.get("data_concessao"):
+        st.caption(f"📅 **Data da concessão:** {patente_dados['data_concessao']}")
+
+    if patente_dados.get("numero_processo"):
+        st.caption(f"📄 **Processo:** {patente_dados['numero_processo']}")
+
+    if patente_dados.get("status"):
+        st.caption(f"📌 **Status:** {patente_dados['status']}")
         if patente_dados["descricao"]:
             st.info(f"**Descricao:** {patente_dados['descricao']}")
         
