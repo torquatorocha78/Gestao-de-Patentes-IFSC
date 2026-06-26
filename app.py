@@ -244,42 +244,6 @@ elif pagina == "📁 Minhas Patentes":
             st.metric("✅ Concessao", concessao)
         with col4:
             st.metric("👤 Titular", patente_dados["titular"] if patente_dados["titular"] else "N/A")
-            # ================== BLOCO DE EDIÇÃO ==================
-    st.divider()
-    st.subheader("✏️ Editar dados da patente")
-
-    with st.form("form_editar_patente"):
-        nova_data_concessao = st.date_input(
-            "Data de Concessão",
-            value=(
-                pd.to_datetime(patente_dados["data_concessao"]).date()
-                if patente_dados["data_concessao"]
-                else None
-            )
-        )
-
-        novo_titular = st.text_input(
-            "Titular",
-            value=patente_dados["titular"] if patente_dados["titular"] else ""
-        )
-
-        nova_descricao = st.text_area(
-            "Descrição",
-            value=patente_dados["descricao"] if patente_dados["descricao"] else "",
-            height=120
-        )
-
-        salvar = st.form_submit_button("💾 Salvar alterações")
-
-    if salvar:
-        db.atualizar_patente(
-            patente_id,
-            nova_data_concessao.strftime("%Y-%m-%d") if nova_data_concessao else None,
-            nova_descricao.strip(),
-            novo_titular.strip()
-        )
-        st.success("✅ Dados da patente atualizados com sucesso!")
-        st.rerun()
     
         st.divider()
         st.subheader("📊 Detalhamento de Anuidades")
