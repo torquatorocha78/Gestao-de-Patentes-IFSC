@@ -428,5 +428,15 @@ elif pagina == "📁Relatórios":
             file_name="relatorio_patentes.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-   
+def render_footer():
+    st.markdown("""
+    <hr>
+    <div style='text-align:center;
+                color:#666;
+                font-size:12px'>
+        Gestão de Patentes do IFSC<br>
+        Desenvolvido por RT SOLUTIONS
+    </div>
+    """,
+    unsafe_allow_html=True)
 
