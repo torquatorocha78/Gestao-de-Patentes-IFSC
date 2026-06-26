@@ -37,7 +37,24 @@ def init_database():
 
     migrar_anuidades_para_regra_atual()
 
+def atualizar_patente(patente_id, data_concessao, descricao, titular):
+    conn = conectar()
+    cursor = conn.cursor()
 
+    cursor.execute(
+        """
+        UPDATE patentes
+        SET
+            data_concessao = ?,
+            descricao = ?,
+            titular = ?
+        WHERE id = ?
+        """,
+        (data_concessao, descricao, titular, patente_id),
+    )
+
+    conn.commit()
+    conn.close()
 def calcular_periodos_anuidade(data_deposito, numero_anuidade):
     data_dep = datetime.strptime(normalizar_data(data_deposito), "%Y-%m-%d").date()
     data_inicio_ord = data_dep + relativedelta(years=numero_anuidade - 1)
