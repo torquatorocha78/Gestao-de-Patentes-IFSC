@@ -382,6 +382,8 @@ elif pagina == "📤 Importar Excel":
 elif pagina == "📁Relatórios":
     st.title("📁 Exportar para Excel")
 
+    df = st.session_state.get("df", pd.DataFrame())  # ← adicione esta linha
+
     if df.empty:
         st.warning("Nenhum dado carregado.")
     else:
@@ -428,15 +430,4 @@ elif pagina == "📁Relatórios":
             file_name="relatorio_patentes.xlsx",
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
-def render_footer():
-    st.markdown("""
-    <hr>
-    <div style='text-align:center;
-                color:#666;
-                font-size:12px'>
-        Gestão de Patentes do IFSC<br>
-        Desenvolvido por RT SOLUTIONS
-    </div>
-    """,
-    unsafe_allow_html=True)
 
