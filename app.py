@@ -244,7 +244,7 @@ elif pagina == "📁 Minhas Patentes":
             st.metric("✅ Concessao", concessao)
         with col4:
             st.metric("👤 Titular", patente_dados["titular"] if patente_dados["titular"] else "N/A")
-            st.divider()
+        st.divider()
 st.subheader("✏️ Editar dados da patente")
 
 with st.form("form_editar_patente"):
@@ -280,7 +280,7 @@ if salvar:
     st.success("✅ Dados da patente atualizados com sucesso!")
     st.rerun()
         
-
+   
         if patente_dados["descricao"]:
             st.info(f"**Descricao:** {patente_dados['descricao']}")
         
