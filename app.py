@@ -382,52 +382,94 @@ elif pagina == "📤 Importar Excel":
 elif pagina == "📁Relatórios":
     st.title("📁 Exportar para Excel")
 
-    df = st.session_state.get("df", pd.DataFrame())  # ← adicione esta linha
+    # =============================
+    # 1. Montar DataFrame base
+    # =============================
+    df_patentes = db.obter_patentes()
 
-    if df.empty:
-        st.warning("Nenhum dado carregado.")
-    else:
-        st.subheader("Configurar relatório")
+    if df_patentes.empty:
+        st.warning("Nenhuma patente cadastrada para gerar relatório.")
+        st.stop()
 
-        # Seleção de colunas
-        colunas_disponiveis = df.columns.tolist()
-        colunas_selecionadas = st.multiselect(
-            "Selecione as colunas para exportar",
-            colunas_disponiveis,
-            default=colunas_disponiveis
-        )
+    dados_relatorio = []
 
-        df_filtrado = df.copy()
+    for _, patente in df_patentes.iterrows():
+        anuidades = db.obter_anuidades(patente["id"])
 
-        # Filtros por coluna
-        with st.expander("Filtros"):
-            for col in colunas_selecionadas:
-                valores = df[col].dropna().unique().tolist()
-                if len(valores) > 1 and len(valores) <= 50:
-                    selecionados = st.multiselect(
-                        f"Filtrar {col}",
-                        valores,
-                        default=valores
-                    )
-                    df_filtrado = df_filtrado[df_filtrado[col].isin(selecionados)]
+        for _, anu in anuidades.iterrows():
+            status = utils.calcular_status_anuidade(
+                anu["data_inicio_ordinario"],
+                anu["data_fim_ordinario"],
+                anu["data_inicio_extraordinario"],
+                anu["data_fim_extraordinario"],
+                anu["data_pagamento"],
+            )
 
-        # Aplicar seleção final de colunas
-        df_final = df_filtrado[colunas_selecionadas]
+            dados_relatorio.append({
+                "Número da Patente": patente["numero_patente"],
+                "Titular": patente["titular"],
+                "Data Depósito": utils.formatar_data(patente["data_deposito"]),
+                "Data Concessão": utils.formatar_data(patente["data_concessao"]) if patente["data_concessao"] else "",
+                "Anuidade": anu["numero_anuidade"],
+                "Início Ordinário": utils.formatar_data(anu["data_inicio_ordinario"]),
+                "Fim Ordinário": utils.formatar_data(anu["data_fim_ordinario"]),
+                "Início Extraordinário": utils.formatar_data(anu["data_inicio_extraordinario"]),
+                "Fim Extraordinário": utils.formatar_data(anu["data_fim_extraordinario"]),
+                "Status": utils.formatar_status(status),
+                "Data Pagamento": utils.formatar_data(anu["data_pagamento"]) if anu["data_pagamento"] else ""
+            })
 
-        st.subheader("Pré-visualização")
-        st.dataframe(df_final)
+    df = pd.DataFrame(dados_relatorio)
 
-        # Exportação Excel
-        buffer = BytesIO()
-        with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
-            df_final.to_excel(writer, index=False, sheet_name="Relatório")
+    # =============================
+    # 2. Configuração do relatório
+    # =============================
+    st.subheader("Configurar relatório")
 
-        buffer.seek(0)
+    colunas_disponiveis = df.columns.tolist()
+    colunas_selecionadas = st.multiselect(
+        "Selecione as colunas para exportar",
+        colunas_disponiveis,
+        default=colunas_disponiveis
+    )
 
-        st.download_button(
-            "📥 Baixar relatório em Excel",
-            buffer,
-            file_name="relatorio_patentes.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+    df_filtrado = df.copy()
+
+    # =============================
+    # 3. Filtros dinâmicos
+    # =============================
+    with st.expander("Filtros"):
+        for col in colunas_selecionadas:
+            valores = df[col].dropna().unique().tolist()
+            if 1 < len(valores) <= 50:
+                selecionados = st.multiselect(
+                    f"Filtrar {col}",
+                    valores,
+                    default=valores
+                )
+                df_filtrado = df_filtrado[df_filtrado[col].isin(selecionados)]
+
+    df_final = df_filtrado[colunas_selecionadas]
+
+    # =============================
+    # 4. Pré-visualização
+    # =============================
+    st.subheader("Pré-visualização")
+    st.dataframe(df_final, use_container_width=True)
+
+    # =============================
+    # 5. Exportação Excel
+    # =============================
+    buffer = BytesIO()
+    with pd.ExcelWriter(buffer, engine="openpyxl") as writer:
+        df_final.to_excel(writer, index=False, sheet_name="Relatório")
+
+    buffer.seek(0)
+
+    st.download_button(
+        "📥 Baixar relatório em Excel",
+        buffer,
+        file_name="relatorio_patentes.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    )
 
