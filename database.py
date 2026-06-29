@@ -209,3 +209,61 @@ def atualizar_status_anuidade(patente_id, numero_anuidade, status, data_pagament
 
     conn.commit()
     conn.close()
+# =====================================================
+# ATUALIZAÇÃO COMPLETA DA PATENTE (EDIÇÃO INLINE)
+# =====================================================
+
+def atualizar_patente(
+    patente_id,
+    novo_titulo=None,
+    nova_data_concessao=None,
+    novo_titular=None,
+    novo_gestor=None,
+    novo_status=None
+):
+    """
+    Atualiza os dados principais da patente.
+    Qualquer campo pode ser None (não será alterado).
+    """
+
+    conn = conectar()
+    cursor = conn.cursor()
+
+    campos = []
+    valores = []
+
+    if novo_titulo is not None:
+        campos.append("descricao = ?")
+        valores.append(novo_titulo.strip())
+
+    if nova_data_concessao is not None:
+        campos.append("data_concessao = ?")
+        valores.append(normalizar_data(nova_data_concessao))
+
+    if novo_titular is not None:
+        campos.append("titular = ?")
+        valores.append(novo_titular.strip())
+
+    if novo_gestor is not None:
+        campos.append("gestor = ?")
+        valores.append(novo_gestor.strip())
+
+    if novo_status is not None:
+        campos.append("status = ?")
+        valores.append(novo_status.strip())
+
+    if not campos:
+        conn.close()
+        return
+
+    valores.append(patente_id)
+
+    query = f"""
+        UPDATE patentes
+        SET {', '.join(campos)}
+        WHERE id = ?
+    """
+
+    cursor.execute(query, valores)
+    conn.commit()
+    conn.close()
