@@ -1,3 +1,4 @@
+import pandas as pd
 from datetime import datetime, timedelta
 
 
@@ -26,23 +27,25 @@ def calcular_status_anuidade(
     data_inicio_extraord = converter_data(data_inicio_extraord)
     data_fim_extraord = converter_data(data_fim_extraord)
 
-    if (data_fim_ord - hoje).days > 100:
+    # Anuidade muito futura
+    if data_fim_ord and (data_fim_ord - hoje).days > 100:
         return "futuro"
 
-    if data_inicio_extraord <= hoje <= data_fim_extraord:
-        return "vermelho"
+    # Período extraordinário ou vencido
+    if data_inicio_extraord and data_fim_extraord:
+        if data_inicio_extraord <= hoje <= data_fim_extraord:
+            return "vermelho"
+        if hoje > data_fim_extraord:
+            return "vermelho"
 
-    if hoje > data_fim_extraord:
-        return "vermelho"
+    # Alerta (30 dias antes do vencimento)
+    if data_fim_ord:
+        data_alerta = data_fim_ord - timedelta(days=30)
+        if data_alerta <= hoje <= data_fim_ord:
+            return "amarelo"
 
-    data_alerta = data_fim_ord - timedelta(days=30)
-    if data_alerta <= hoje <= data_fim_ord:
-        return "amarelo"
-
-    if data_inicio_ord <= hoje <= data_alerta:
-        return "verde"
-
-    if hoje < data_inicio_ord:
+    # Normal
+    if data_inicio_ord and hoje >= data_inicio_ord:
         return "verde"
 
     return "verde"
@@ -54,6 +57,10 @@ def obter_dias_restantes(data_fim_ord, data_pagamento=None):
 
     hoje = datetime.now().date()
     data_fim_ord = converter_data(data_fim_ord)
+
+    if not data_fim_ord:
+        return 0
+
     dias = (data_fim_ord - hoje).days
     return max(0, dias)
 
@@ -80,7 +87,7 @@ def criar_emoji_status(status):
         "amarelo": "⚠️",
         "vermelho": "❌",
         "pago": "💰",
-        "futuro": "⚠️",
+        "futuro": "⏳",
     }
     return emojis.get(status, "❓")
 
@@ -88,7 +95,7 @@ def criar_emoji_status(status):
 def formatar_status(status):
     rotulos = {
         "verde": "NORMAL",
-        "amarelo": "ATENCAO",
+        "amarelo": "ATENÇÃO",
         "vermelho": "VENCIDO",
         "pago": "PAGO",
         "futuro": "PAGAR NO FUTURO",
