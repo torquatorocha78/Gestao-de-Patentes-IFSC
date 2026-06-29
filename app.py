@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-
 import database as db
 import utils
 from io import BytesIO
