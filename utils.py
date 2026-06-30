@@ -124,3 +124,11 @@ def formatar_status(status):
         "pago": "PAGO",
         "futuro": "PAGAR NO FUTURO",
     }.get(status, str(status).upper())
+
+def normalizar_status_anuidade(status, data_vencimento):
+    hoje = date.today()
+
+    if data_vencimento < hoje:
+        return "PAGA"
+
+    return status
