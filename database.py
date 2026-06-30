@@ -5,16 +5,29 @@ import pandas as pd
 import sqlite3
 from dateutil.relativedelta import relativedelta
 
+# =====================================================
+# CONFIGURAÇÕES GERAIS
+# =====================================================
+
 DATABASE_FILE = Path(__file__).with_name("patentes.db")
+
 PRIMEIRA_ANUIDADE = 3
 ULTIMA_ANUIDADE = 20
 
+
+# =====================================================
+# CONEXÃO COM BANCO
+# =====================================================
 
 def get_connection():
     conn = sqlite3.connect(DATABASE_FILE)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
+
+# =====================================================
+# CRIAÇÃO DO BANCO
+# =====================================================
 
 def init_database():
     with get_connection() as conn:
@@ -44,7 +57,7 @@ def init_database():
                 data_fim_ordinario DATE NOT NULL,
                 data_inicio_extraordinario DATE NOT NULL,
                 data_fim_extraordinario DATE NOT NULL,
-                status TEXT,
+                status TEXT DEFAULT 'pendente',
                 data_pagamento DATE,
                 FOREIGN KEY (patente_id) REFERENCES patentes(id) ON DELETE CASCADE,
                 UNIQUE(patente_id, numero_anuidade)
@@ -52,6 +65,10 @@ def init_database():
             """
         )
 
+
+# =====================================================
+# FUNÇÕES AUXILIARES
+# =====================================================
 
 def normalizar_data(valor):
     if valor is None or pd.isna(valor):
@@ -78,7 +95,9 @@ def normalizar_data(valor):
 
 
 def calcular_periodos_anuidade(data_deposito, numero_anuidade):
-    data_dep = datetime.strptime(normalizar_data(data_deposito), "%Y-%m-%d").date()
+    data_dep = datetime.strptime(
+        normalizar_data(data_deposito), "%Y-%m-%d"
+    ).date()
 
     inicio_ord = data_dep + relativedelta(years=numero_anuidade - 1)
     fim_ord = inicio_ord + relativedelta(months=3)
@@ -94,31 +113,47 @@ def calcular_periodos_anuidade(data_deposito, numero_anuidade):
     )
 
 
-def inserir_anuidades(cursor, patente_id, data_deposito, pagamentos=None):
-    pagamentos = pagamentos or {}
+def status_anuidade_por_data(status, data_fim_extraordinario):
+    hoje = date.today()
 
+    if data_fim_extraordinario and data_fim_extraordinario < hoje:
+        return "PAGA"
+
+    return status.upper() if status else "PENDENTE"
+
+
+# =====================================================
+# ANUIDADES
+# =====================================================
+
+def inserir_anuidades(cursor, patente_id, data_deposito):
     for numero in range(PRIMEIRA_ANUIDADE, ULTIMA_ANUIDADE + 1):
         datas = calcular_periodos_anuidade(data_deposito, numero)
-        pagamento = pagamentos.get(numero, {})
 
         cursor.execute(
             """
             INSERT OR IGNORE INTO anuidades
-            (patente_id, numero_anuidade, data_inicio_ordinario, data_fim_ordinario,
-             data_inicio_extraordinario, data_fim_extraordinario, status, data_pagamento)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (patente_id, numero_anuidade,
+             data_inicio_ordinario, data_fim_ordinario,
+             data_inicio_extraordinario, data_fim_extraordinario,
+             status, data_pagamento)
+            VALUES (?, ?, ?, ?, ?, ?, 'pendente', NULL)
             """,
-            (
-                patente_id,
-                numero,
-                *datas,
-                pagamento.get("status", "pendente"),
-                pagamento.get("data_pagamento"),
-            ),
+            (patente_id, numero, *datas),
         )
 
 
-def adicionar_patente(numero_patente, data_deposito, data_concessao=None, descricao="", titular=""):
+# =====================================================
+# PATENTES
+# =====================================================
+
+def adicionar_patente(
+    numero_patente,
+    data_deposito,
+    data_concessao=None,
+    descricao="",
+    titular="",
+):
     numero_patente = str(numero_patente).strip()
     data_deposito = normalizar_data(data_deposito)
     data_concessao = normalizar_data(data_concessao)
@@ -139,43 +174,80 @@ def adicionar_patente(numero_patente, data_deposito, data_concessao=None, descri
                 (numero_patente, data_deposito, data_concessao, descricao, titular),
             )
 
-            inserir_anuidades(cursor, cursor.lastrowid, data_deposito)
+            patente_id = cursor.lastrowid
+            inserir_anuidades(cursor, patente_id, data_deposito)
 
         return True, "Patente adicionada com sucesso!"
 
     except sqlite3.IntegrityError:
-        return False, "Patente já existe."
+        return False, "Patente já existe no banco."
 
 
 def obter_patentes():
     with get_connection() as conn:
         return pd.read_sql(
             """
-            SELECT id, numero_patente, data_deposito, data_concessao, descricao, titular
+            SELECT id, numero_patente, data_deposito,
+                   data_concessao, descricao, titular
             FROM patentes
             ORDER BY data_deposito DESC
             """,
             conn,
+            parse_dates=["data_deposito", "data_concessao"],
         )
 
 
+def deletar_patente(patente_id):
+    with get_connection() as conn:
+        conn.execute(
+            "DELETE FROM patentes WHERE id = ?",
+            (int(patente_id),),
+        )
+
+
+# =====================================================
+# CONSULTAS
+# =====================================================
+
 def obter_anuidades(patente_id):
     with get_connection() as conn:
-        return pd.read_sql(
+        df = pd.read_sql(
             """
-            SELECT numero_anuidade, data_inicio_ordinario, data_fim_ordinario,
-                   data_inicio_extraordinario, data_fim_extraordinario,
-                   status, data_pagamento
+            SELECT numero_anuidade,
+                   data_inicio_ordinario,
+                   data_fim_ordinario,
+                   data_inicio_extraordinario,
+                   data_fim_extraordinario,
+                   status,
+                   data_pagamento
             FROM anuidades
             WHERE patente_id = ?
             ORDER BY numero_anuidade
             """,
             conn,
             params=(int(patente_id),),
+            parse_dates=[
+                "data_inicio_ordinario",
+                "data_fim_ordinario",
+                "data_inicio_extraordinario",
+                "data_fim_extraordinario",
+                "data_pagamento",
+            ],
         )
 
+    df["status"] = df.apply(
+        lambda row: status_anuidade_por_data(
+            row["status"], row["data_fim_extraordinario"]
+        ),
+        axis=1,
+    )
 
-def atualizar_status_anuidade(patente_id, numero_anuidade, status, data_pagamento=None):
+    return df
+
+
+def atualizar_status_anuidade(
+    patente_id, numero_anuidade, status, data_pagamento=None
+):
     with get_connection() as conn:
         conn.execute(
             """
@@ -183,14 +255,18 @@ def atualizar_status_anuidade(patente_id, numero_anuidade, status, data_pagament
             SET status = ?, data_pagamento = ?
             WHERE patente_id = ? AND numero_anuidade = ?
             """,
-            (status, normalizar_data(data_pagamento), patente_id, numero_anuidade),
+            (
+                status.lower(),
+                normalizar_data(data_pagamento),
+                int(patente_id),
+                int(numero_anuidade),
+            ),
         )
 
 
-def deletar_patente(patente_id):
-    with get_connection() as conn:
-        conn.execute("DELETE FROM patentes WHERE id = ?", (int(patente_id),))
-
+# =====================================================
+# IMPORTAÇÃO
+# =====================================================
 
 def importar_excel(caminho):
     df = pd.read_excel(caminho)
