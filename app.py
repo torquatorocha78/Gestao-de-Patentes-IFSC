@@ -1,7 +1,6 @@
 import streamlit as st
 import pandas as pd
 from datetime import date
-
 import database as db
 
 # =====================================================
