@@ -1,8 +1,6 @@
-import sqlite3
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
-DB_PATH = Path("dados_patentes.db")
 import pandas as pd
 import sqlite3
 from dateutil.relativedelta import relativedelta
@@ -17,14 +15,14 @@ def get_connection():
     conn = sqlite3.connect(DATABASE_FILE)
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
+from pathlib import Path
 
+DB_PATH = Path("dados_patentes.db")
 
 def init_database():
     with get_connection() as conn:
         cursor = conn.cursor()
 
-def conectar():
-    return sqlite3.connect(DB_PATH)
         cursor.execute(
             """
             CREATE TABLE IF NOT EXISTS patentes (
@@ -38,16 +36,18 @@ def conectar():
             )
             """
         )
+def conectar():
+    return sqlite3.connect(DB_PATH)
 
     migrar_anuidades_para_regra_atual()
 
+def atualizar_patente(patente_id, data_concessao, descricao, titular):
 def atualizar_patente(
     patente_id,
     novo_titulo,
     nova_data_concessao,
     novo_titular
 ):
-def atualizar_patente(patente_id, data_concessao, descricao, titular):
     conn = conectar()
     cursor = conn.cursor()
 
@@ -61,13 +61,13 @@ def atualizar_patente(patente_id, data_concessao, descricao, titular):
             titular = ?
         WHERE id = ?
         """,
+        (data_concessao, descricao, titular, patente_id),
         (
             novo_titulo,
             nova_data_concessao,
             novo_titular,
             patente_id,
         ),
-        (data_concessao, descricao, titular, patente_id),
     )
 
     conn.commit()
