@@ -12,8 +12,6 @@ from io import BytesIO
 # =====================================================
 
 st.set_page_config(
-    page_title="Sistema de Gestao de Patentes",
-    page_icon="📋",
     page_title="Gestão de Patentes - IFSC",
     page_icon="📄",
     layout="wide",
