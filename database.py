@@ -116,8 +116,14 @@ def calcular_periodos_anuidade(data_deposito, numero_anuidade):
 def status_anuidade_por_data(status, data_fim_extraordinario):
     hoje = date.today()
 
-    if data_fim_extraordinario and data_fim_extraordinario < hoje:
-        return "PAGA"
+    # Convert pandas Timestamp to Python date if needed
+    if data_fim_extraordinario is not None:
+        if hasattr(data_fim_extraordinario, 'date'):
+            # pandas Timestamp has a .date() method
+            data_fim_extraordinario = data_fim_extraordinario.date()
+        
+        if data_fim_extraordinario < hoje:
+            return "PAGA"
 
     return status.upper() if status else "PENDENTE"
 
